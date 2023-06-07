@@ -173,6 +173,13 @@ var testEvtLogMsgNetworkConn = "Network connection detected:\r\nRuleName: Usermo
 	"DestinationHostname: 58.8.117.34.bc.googleusercontent.com\r\nDestinationPort: 443\r\n" +
 	"DestinationPortName: https"
 
+// Sample message provided by @wz2b in https://github.com/grafana/loki/pull/8382#issuecomment-1579182263
+var testEvtLogMsgCryptoOp = "Cryptographic operation.\r\n\r\nSubject:\r\n\tSecurity ID:\t\tS-1-5-18\r\n\t" +
+	"Account Name:\t\tGIS-SHARES$\r\n\tAccount Domain:\t\tAD\r\n\tLogon ID:\t\t0x3E7\r\n\r\n" +
+	"Cryptographic Parameters:\r\n\tProvider Name:\tMicrosoft Software Key Storage Provider\r\n\t" +
+	"Algorithm Name:\tRSA\r\n\tKey Name:\tConfigMgrPrimaryKey\r\n\tKey Type:\tMachine key.\r\n\r\n" +
+	"Cryptographic Operation:\r\n\tOperation:\tOpen Key.\r\n\tReturn Code:\t0x0"
+
 func TestEventLogMessage_Real(t *testing.T) {
 	t.Parallel()
 
@@ -257,6 +264,26 @@ func TestEventLogMessage_Real(t *testing.T) {
 				"DestinationHostname": "58.8.117.34.bc.googleusercontent.com",
 				"DestinationPort":     "443",
 				"DestinationPortName": "https",
+			},
+		},
+		"successfully ran a pipeline with crypto event log message stage using default source": {
+			testEvtLogMsgYamlDefaults,
+			"message",
+			testEvtLogMsgCryptoOp,
+			map[string]interface{}{
+				"Subject":                  "",
+				"_Security_ID":             "S-1-5-18",
+				"_Account_Name":            "GIS-SHARES$",
+				"_Account_Domain":          "AD",
+				"_Logon_ID":                "0x3E7",
+				"Cryptographic_Parameters": "",
+				"_Provider_Name":           "Microsoft Software Key Storage Provider",
+				"_Algorithm_Name":          "RSA",
+				"_Key_Name":                "ConfigMgrPrimaryKey",
+				"_Key_Type":                "Machine key.",
+				"Cryptographic_Operation":  "",
+				"_Operation":               "Open Key.",
+				"_Return_Code":             "0x0",
 			},
 		},
 	}
