@@ -37,6 +37,12 @@ pipeline_stages:
     overwrite_existing: true
 `
 
+var testEvtLogMsgYamlFirstLineOnly = `
+pipeline_stages:
+- eventlogmessage:
+    first_line_only: true
+`
+
 var (
 	testEvtLogMsgSimple        = "Key1: Value 1\r\nKey2: Value 2\r\nKey3: Value: 3"
 	testEvtLogMsgInvalidLabels = "Key 1: Value 1\r\n0Key2: Value 2\r\nKey@3: Value 3\r\n: Value 4"
@@ -266,6 +272,14 @@ func TestEventLogMessage_Real(t *testing.T) {
 				"DestinationPortName": "https",
 			},
 		},
+		"successfully ran a pipeline with network event log message stage only extracting the first line": {
+			testEvtLogMsgYamlFirstLineOnly,
+			"message",
+			testEvtLogMsgNetworkConn,
+			map[string]interface{}{
+				"Description": "Network connection detected:",
+			},
+		},
 		"successfully ran a pipeline with crypto event log message stage using default source": {
 			testEvtLogMsgYamlDefaults,
 			"message",
@@ -284,6 +298,14 @@ func TestEventLogMessage_Real(t *testing.T) {
 				"Cryptographic_Operation":  "",
 				"_Operation":               "Open Key.",
 				"_Return_Code":             "0x0",
+			},
+		},
+		"successfully ran a pipeline with crypto event log message stage only extracting the first line": {
+			testEvtLogMsgYamlFirstLineOnly,
+			"message",
+			testEvtLogMsgCryptoOp,
+			map[string]interface{}{
+				"Description": "Cryptographic operation.",
 			},
 		},
 	}
