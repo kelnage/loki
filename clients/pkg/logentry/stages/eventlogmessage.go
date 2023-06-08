@@ -20,6 +20,7 @@ type EventLogMessageConfig struct {
 	Source            *string `mapstructure:"source"`
 	DropInvalidLabels bool    `mapstructure:"drop_invalid_labels"`
 	OverwriteExisting bool    `mapstructure:"overwrite_existing"`
+	FirstLineOnly     bool    `mapstructure:"first_line_only"`
 }
 
 type eventLogMessageStage struct {
@@ -101,41 +102,52 @@ func (m *eventLogMessageStage) processEntry(extracted map[string]interface{}, ke
 		return err
 	}
 	lines := strings.Split(s, "\r\n")
-	for _, line := range lines {
-		parts := strings.SplitN(line, ":", 2)
-		if len(parts) < 2 {
-			level.Warn(m.logger).Log("msg", "invalid line parsed from message", "line", line)
-			continue
-		}
-		mkey := parts[0]
-		if !model.LabelName(mkey).IsValid() {
-			if m.cfg.DropInvalidLabels {
+	if m.cfg.FirstLineOnly && len(lines) > 0 {
+		mkey := updateKeyName("Description", extracted, m)
+		mval := lines[0]
+		extracted[mkey] = mval
+	} else {
+		for _, line := range lines {
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) < 2 {
+				level.Debug(m.logger).Log("msg", "non-key-value line parsed from message, skipping", "line", line)
+				continue
+			}
+			mkey := parts[0]
+			if !model.LabelName(mkey).IsValid() {
+				if m.cfg.DropInvalidLabels {
+					if Debug {
+						level.Debug(m.logger).Log("msg", "invalid label parsed from message", "key", mkey)
+					}
+					continue
+				}
+				mkey = SanitizeFullLabelName(mkey)
+			}
+			mkey = updateKeyName(mkey, extracted, m)
+			mval := strings.TrimSpace(parts[1])
+			if !model.LabelValue(mval).IsValid() {
 				if Debug {
-					level.Debug(m.logger).Log("msg", "invalid label parsed from message", "key", mkey)
+					level.Debug(m.logger).Log("msg", "invalid value parsed from message", "value", mval)
 				}
 				continue
 			}
-			mkey = SanitizeFullLabelName(mkey)
+			extracted[mkey] = mval
 		}
-		if _, ok := extracted[mkey]; ok && !m.cfg.OverwriteExisting {
-			level.Info(m.logger).Log("msg", "extracted key that already existed, appending _extracted to key",
-				"key", mkey)
-			mkey += "_extracted"
-		}
-		mval := strings.TrimSpace(parts[1])
-		if !model.LabelValue(mval).IsValid() {
-			if Debug {
-				level.Debug(m.logger).Log("msg", "invalid value parsed from message", "value", mval)
-			}
-			continue
-		}
-		extracted[mkey] = mval
 	}
 	if Debug {
 		level.Debug(m.logger).Log("msg", "extracted data debug in event_log_message stage",
 			"extracted data", fmt.Sprintf("%v", extracted))
 	}
 	return nil
+}
+
+func updateKeyName(mkey string, extracted map[string]interface{}, m *eventLogMessageStage) string {
+	if _, ok := extracted[mkey]; ok && !m.cfg.OverwriteExisting {
+		level.Info(m.logger).Log("msg", "extracted key that already existed, appending _extracted to key",
+			"key", mkey)
+		mkey += "_extracted"
+	}
+	return mkey
 }
 
 func (m *eventLogMessageStage) Name() string {
