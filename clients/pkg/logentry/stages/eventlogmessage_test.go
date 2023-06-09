@@ -285,6 +285,7 @@ func TestEventLogMessage_Real(t *testing.T) {
 			"message",
 			testEvtLogMsgCryptoOp,
 			map[string]interface{}{
+				"Description":              "Cryptographic operation.",
 				"Subject":                  "",
 				"_Security_ID":             "S-1-5-18",
 				"_Account_Name":            "GIS-SHARES$",

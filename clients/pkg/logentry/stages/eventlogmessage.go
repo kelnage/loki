@@ -102,37 +102,40 @@ func (m *eventLogMessageStage) processEntry(extracted map[string]interface{}, ke
 		return err
 	}
 	lines := strings.Split(s, "\r\n")
-	if m.cfg.FirstLineOnly && len(lines) > 0 {
-		mkey := updateKeyName("Description", extracted, m)
-		mval := lines[0]
-		extracted[mkey] = mval
-	} else {
-		for _, line := range lines {
-			parts := strings.SplitN(line, ":", 2)
-			if len(parts) < 2 {
-				level.Debug(m.logger).Log("msg", "non-key-value line parsed from message, skipping", "line", line)
-				continue
-			}
-			mkey := parts[0]
-			if !model.LabelName(mkey).IsValid() {
-				if m.cfg.DropInvalidLabels {
-					if Debug {
-						level.Debug(m.logger).Log("msg", "invalid label parsed from message", "key", mkey)
-					}
-					continue
-				}
-				mkey = SanitizeFullLabelName(mkey)
-			}
-			mkey = updateKeyName(mkey, extracted, m)
-			mval := strings.TrimSpace(parts[1])
-			if !model.LabelValue(mval).IsValid() {
-				if Debug {
-					level.Debug(m.logger).Log("msg", "invalid value parsed from message", "value", mval)
-				}
-				continue
-			}
+	for index, line := range lines {
+		parts := strings.SplitN(line, ":", 2)
+		if (len(parts) < 2 || m.cfg.FirstLineOnly) && index == 0 {
+			mkey := updateKeyName("Description", extracted, m)
+			mval := line
 			extracted[mkey] = mval
+			if m.cfg.FirstLineOnly {
+				break
+			} else {
+				continue
+			}
+		} else if len(parts) < 2 {
+			level.Debug(m.logger).Log("msg", "non-key-value line parsed from message, skipping", "line", line)
+			continue
 		}
+		mkey := parts[0]
+		if !model.LabelName(mkey).IsValid() {
+			if m.cfg.DropInvalidLabels {
+				if Debug {
+					level.Debug(m.logger).Log("msg", "invalid label parsed from message", "key", mkey)
+				}
+				continue
+			}
+			mkey = SanitizeFullLabelName(mkey)
+		}
+		mkey = updateKeyName(mkey, extracted, m)
+		mval := strings.TrimSpace(parts[1])
+		if !model.LabelValue(mval).IsValid() {
+			if Debug {
+				level.Debug(m.logger).Log("msg", "invalid value parsed from message", "value", mval)
+			}
+			continue
+		}
+		extracted[mkey] = mval
 	}
 	if Debug {
 		level.Debug(m.logger).Log("msg", "extracted data debug in event_log_message stage",
