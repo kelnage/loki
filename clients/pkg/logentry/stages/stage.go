@@ -42,6 +42,7 @@ const (
 	StageTypeEventLogMessage  = "eventlogmessage"
 	StageTypeGeoIP            = "geoip"
 	StageTypeNonIndexedLabels = "non_indexed_labels"
+	StageTypeReverseDNS       = "reverse_dns"
 )
 
 // Processor takes an existing set of labels, timestamp and log entry and returns either a possibly mutated
@@ -204,6 +205,9 @@ func initCreators() {
 		},
 		StageTypeGeoIP: func(params StageCreationParams) (Stage, error) {
 			return newGeoIPStage(params.logger, params.config)
+		},
+		StageTypeReverseDNS: func(params StageCreationParams) (Stage, error) {
+			return newRDNSStage(params.logger, params.config)
 		},
 		StageTypeNonIndexedLabels: newNonIndexedLabelsStage,
 	}
