@@ -4,10 +4,10 @@ import (
 	"errors"
 	"net"
 	"reflect"
+	"strings"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/miekg/dns"
 	"github.com/mitchellh/mapstructure"
 	"github.com/prometheus/common/model"
 )
@@ -122,13 +122,5 @@ func (d *reverseDNSStage) close() {
 }
 
 func normaliseHost(ptr string) string {
-	host := ""
-	labels := dns.SplitDomainName(ptr)
-	if len(labels) > 0 {
-		for j := len(labels) - 1; j > 0; j-- {
-			host += labels[j] + "."
-		}
-		host += labels[0]
-	}
-	return host
+	return strings.TrimSuffix(ptr, ".")
 }

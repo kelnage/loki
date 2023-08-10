@@ -39,7 +39,7 @@ func Test_Reverse_DNS_process(t *testing.T) {
 				},
 			},
 			model.LabelSet{
-				model.LabelName("hostnames"): model.LabelValue("google.dns"),
+				model.LabelName("hostnames"): model.LabelValue("dns.google"),
 			},
 			false,
 		},
